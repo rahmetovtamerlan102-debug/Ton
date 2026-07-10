@@ -55,7 +55,29 @@ ton_wallet_bot/
 - **Конфиг через .env**, ничего не захардкожено
 - **Docker-образ** для деплоя
 
-## Установка и запуск
+## Деплой на Render (один сервис)
+
+Бот и HTML-отчёт теперь живут в одном Web Service — бот сам поднимает лёгкий
+статический сервер на порту, который передаёт Render (переменная `PORT`),
+и отдаёт по нему `webapp/ton_ledger_report.html`.
+
+1. Render → New → **Web Service** → выбери репозиторий, окружение — Docker
+   (подхватит `Dockerfile` из корня).
+2. Задай **Name**, например `ton-wallet-bot` — от него будет зависеть URL:
+   `https://ton-wallet-bot.onrender.com`.
+3. В **Environment** добавь переменные:
+   - `BOT_TOKEN` — токен от @BotFather
+   - `TONAPI_KEY` — опционально
+   - `REPORT_BASE_URL` — `https://ton-wallet-bot.onrender.com/ton_ledger_report.html`
+     (используй то же имя сервиса, что задал на шаге 2)
+4. Deploy. После первого успешного деплоя проверь: открой
+   `https://ton-wallet-bot.onrender.com/ton_ledger_report.html` в браузере —
+   должна открыться страница отчёта (без адреса в баланс-карточке, это нормально,
+   пока не передан `?addr=`).
+
+Второй сервис (Static Site) не нужен — всё отдаётся с одного порта.
+
+## Запуск локально
 
 ```bash
 pip install -r requirements.txt

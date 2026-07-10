@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>TON Ledger — отчёт по кошельку</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B0F14;
+    --panel:#121922;
+    --panel-2:#0F151D;
+    --hairline:#22303C;
+    --muted:#7C8B99;
+    --fg:#E7ECF2;
+    --teal:#2FD9C4;
+    --amber:#F2A93B;
+    --red:#E5686B;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(47,217,196,0.07), transparent 60%),
+      var(--ink);
+    color:var(--fg);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 80px;
+  }
+  .app{width:100%; max-width:480px;}
+
+  /* Top bar */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:22px; padding:0 2px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px;
+    letter-spacing:0.02em;
+  }
+  .brand .dot{
+    width:8px; height:8px; border-radius:50%; background:var(--teal);
+    box-shadow:0 0 0 3px rgba(47,217,196,0.15);
+  }
+  .live{
+    display:flex; align-items:center; gap:6px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);
+  }
+  .live .pulse{
+    width:6px; height:6px; border-radius:50%; background:var(--teal);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1; transform:scale(1);}
+    50%{opacity:0.4; transform:scale(0.8);}
+  }
+
+  /* Address input */
+  .lookup{
+    display:flex; gap:8px; margin-bottom:18px;
+  }
+  .lookup input{
+    flex:1; min-width:0;
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:13px 14px;
+    color:var(--fg);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .lookup input::placeholder{color:var(--muted);}
+  .lookup input:focus{border-color:var(--teal);}
+  .lookup button{
+    background:var(--teal);
+    color:#062420;
+    border:none;
+    border-radius:10px;
+    padding:0 18px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    transition:transform .1s ease, filter .15s ease;
+  }
+  .lookup button:hover{filter:brightness(1.08);}
+  .lookup button:active{transform:scale(0.97);}
+  .lookup button:focus-visible, .lookup input:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+
+  /* Hero card */
+  .hero{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--hairline);
+    border-radius:var(--radius);
+    padding:22px 20px 20px;
+  }
+  .hero-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .addr{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--muted);
+    display:flex; align-items:center; gap:8px;
+  }
+  .addr button{
+    background:none; border:1px solid var(--hairline); color:var(--muted);
+    border-radius:6px; padding:3px 7px; font-size:10.5px; cursor:pointer;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .addr button:hover{color:var(--fg); border-color:var(--muted);}
+  .pill{
+    font-family:'IBM Plex Mono', monospace; font-size:11px;
+    padding:4px 10px; border-radius:999px;
+    background:rgba(47,217,196,0.12); color:var(--teal);
+    border:1px solid rgba(47,217,196,0.3);
+    white-space:nowrap;
+  }
+  .pill.inactive{
+    background:rgba(229,104,107,0.12); color:var(--red); border-color:rgba(229,104,107,0.3);
+  }
+
+  .balance-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted);
+    margin-bottom:6px;
+  }
+  .balance{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:44px;
+    line-height:1;
+    letter-spacing:-0.01em;
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .balance .unit{font-size:18px; color:var(--muted); font-weight:600;}
+  .sub-meta{
+    margin-top:10px; display:flex; gap:16px; flex-wrap:wrap;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted);
+  }
+  .sub-meta b{color:var(--fg); font-weight:500;}
+
+  /* Perforated tear divider — signature element */
+  .tear{
+    position:relative;
+    height:28px;
+    margin:4px 0 6px;
+  }
+  .tear::before{
+    content:"";
+    position:absolute; left:0; right:0; top:12px; height:1px;
+    background:repeating-linear-gradient(90deg, var(--hairline) 0 6px, transparent 6px 12px);
+  }
+  .tear::after{
+    content:"";
+    position:absolute; left:-14px; right:-14px; top:0; height:24px;
+    background:
+      radial-gradient(circle 7px at 0 12px, transparent 98%, var(--ink) 100%),
+      radial-gradient(circle 7px at 20px 12px, var(--ink) 98%, transparent 100%);
+    background-size: 20px 24px;
+    background-repeat: repeat-x;
+    opacity:0.9;
+  }
+
+  /* Report section */
+  .report{
+    background:var(--panel);
+    border:1px solid var(--hairline);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .report-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .report-head h2{
+    margin:0; font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:600;
+    letter-spacing:0.02em; text-transform:uppercase;
+  }
+  .count-badge{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted);
+    background:var(--panel-2); border:1px solid var(--hairline);
+    padding:2px 9px; border-radius:999px;
+  }
+
+  .tx-row{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:14px 18px;
+    border-bottom:1px dashed var(--hairline);
+  }
+  .tx-row:last-of-type{border-bottom:none;}
+  .tx-num{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);
+    width:16px; flex:none; padding-top:2px;
+  }
+  .tx-icon{
+    width:28px; height:28px; border-radius:8px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--panel-2); border:1px solid var(--hairline);
+    font-size:13px;
+  }
+  .tx-icon.in{color:var(--teal);}
+  .tx-icon.out{color:var(--amber);}
+  .tx-icon.scam{color:var(--red);}
+  .tx-body{flex:1; min-width:0;}
+  .tx-top{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
+  .tx-desc{font-size:13.5px; color:var(--fg); line-height:1.35; font-weight:500;}
+  .tx-amount{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; white-space:nowrap;
+  }
+  .tx-amount.pos{color:var(--teal);}
+  .tx-amount.neg{color:var(--amber);}
+  .tx-meta{
+    margin-top:2px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);
+  }
+  .tx-kv{
+    margin-top:6px;
+    display:flex; flex-direction:column; gap:2px;
+    font-size:12px; color:var(--muted);
+  }
+  .tx-kv b{color:var(--fg); font-weight:500;}
+  .tx-hash{
+    margin-top:6px;
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--muted);
+  }
+  .hash-link{color:var(--teal);}
+  .tag-scam{
+    color:var(--red); border:1px solid rgba(229,104,107,0.35);
+    border-radius:5px; padding:1px 6px; font-size:10px;
+  }
+
+  .report-more{
+    padding:14px 18px;
+  }
+  .report-more.pager{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+  .page-label{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--muted);
+    white-space:nowrap;
+  }
+  .pager .more-btn{width:auto; padding:9px 14px;}
+  .more-btn{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--hairline);
+    color:var(--fg);
+    border-radius:9px;
+    padding:11px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .more-btn:hover{border-color:var(--teal); color:var(--teal);}
+  .more-btn:disabled{opacity:0.4; cursor:default;}
+
+  /* States */
+  .state{
+    padding:34px 18px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .state .state-title{
+    color:var(--fg); font-family:'Space Grotesk', sans-serif; font-weight:600;
+    font-size:15px; margin-bottom:6px;
+  }
+  .spinner{
+    width:22px; height:22px; margin:0 auto 14px;
+    border:2px solid var(--hairline); border-top-color:var(--teal);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .footnote{
+    text-align:center; margin-top:16px;
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--muted);
+    opacity:0.7;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .pulse, .spinner{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> TON LEDGER</div>
+    <div class="live"><span class="pulse"></span> mainnet</div>
+  </div>
+
+  <div class="lookup">
+    <input id="addrInput" type="text" placeholder="EQD... адрес или name.ton" autocomplete="off" spellcheck="false" />
+    <button id="lookupBtn">Открыть</button>
+  </div>
+
+  <div id="root"></div>
+
+  <div class="footnote">Данные — TonAPI · только публичный ончейн-реестр кошелька</div>
+</div>
+
+<script>
+const TONAPI = "https://tonapi.io/v2";
+const PAGE_SIZE = 5;
+
+let state = {
+  address: null,
+  account: null,
+  events: [],
+  offset: 0,
+  loading: false,
+  error: null,
+};
+
+const root = document.getElementById("root");
+const addrInput = document.getElementById("addrInput");
+const lookupBtn = document.getElementById("lookupBtn");
+
+function nanoToTon(n){ return (Number(n||0) / 1e9); }
+
+function fmtTon(n){
+  return nanoToTon(n).toLocaleString("ru-RU", {minimumFractionDigits:2, maximumFractionDigits:4});
+}
+
+function fmtDate(ts){
+  if(!ts) return "—";
+  const d = new Date(Number(ts) * 1000);
+  return d.toLocaleString("ru-RU", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
+}
+
+function shortAddr(a){
+  if(!a) return "";
+  return a.length > 16 ? a.slice(0,6) + "…" + a.slice(-6) : a;
+}
+
+function escapeHtml(s){
+  const d = document.createElement("div");
+  d.innerText = s ?? "";
+  return d.innerHTML;
+}
+
+async function fetchJson(path, params={}){
+  const url = new URL(TONAPI + path);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  if(res.status === 404){ throw {code:404, message:"Аккаунт не найден"}; }
+  if(!res.ok){ throw {code:res.status, message:"TonAPI вернул ошибку " + res.status}; }
+  return res.json();
+}
+
+async function resolveAddress(raw){
+  raw = raw.trim();
+  if(raw.endsWith(".ton")){
+    const data = await fetchJson("/dns/" + encodeURIComponent(raw));
+    const addr = data?.wallet?.address;
+    if(!addr) throw {code:0, message:"Домен не привязан к кошельку"};
+    return addr;
+  }
+  return raw;
+}
+
+function renderLoading(){
+  root.innerHTML = `
+    <div class="hero state">
+      <div class="spinner"></div>
+      <div class="state-title">Читаю блокчейн…</div>
+      Запрашиваю баланс и историю у TonAPI
+    </div>`;
+}
+
+function renderError(err){
+  root.innerHTML = `
+    <div class="hero state">
+      <div class="state-title">Не получилось загрузить кошелёк</div>
+      ${escapeHtml(err.message || "Неизвестная ошибка")}${err.code ? " · код " + err.code : ""}
+      <div style="margin-top:14px;">
+        <button class="more-btn" onclick="location.reload()">Попробовать снова</button>
+      </div>
+    </div>`;
+}
+
+function renderEmptyTx(){
+  return `<div class="state">Транзакций пока нет.<br>Они появятся здесь сразу после первого перевода.</div>`;
+}
+
+function shortHash(h){
+  if(!h) return "—";
+  return h.length > 14 ? h.slice(0,5) + "…" + h.slice(-5) : h;
+}
+
+// Достаёт понятные детали (сумма, контрагент, комментарий, маркетплейс)
+// из первого действия события, независимо от его типа.
+function extractDetail(ev){
+  const action = (ev.actions || [])[0] || {};
+  const type = action.type || "";
+
+  if(action.TonTransfer){
+    const d = action.TonTransfer;
+    const isOut = d.sender?.address === ev.account?.address;
+    return {
+      kind: isOut ? "out" : "in",
+      label: isOut ? "Исходящий перевод" : "Входящий перевод",
+      amount: nanoToTon(d.amount) * (isOut ? -1 : 1),
+      counterpartyLabel: isOut ? "Кому" : "От",
+      counterparty: (isOut ? d.recipient : d.sender)?.address,
+      comment: d.comment || null,
+    };
+  }
+  if(action.JettonTransfer){
+    const d = action.JettonTransfer;
+    const isOut = d.sender?.address === ev.account?.address;
+    const symbol = d.jetton?.symbol || "";
+    return {
+      kind: isOut ? "out" : "in",
+      label: (isOut ? "Исходящий " : "Входящий ") + "жетон " + symbol,
+      amount: null,
+      counterpartyLabel: isOut ? "Кому" : "От",
+      counterparty: (isOut ? d.recipient : d.sender)?.address,
+      comment: d.comment || null,
+    };
+  }
+  if(action.NftPurchase){
+    const d = action.NftPurchase;
+    return {
+      kind: "out",
+      label: "Покупка NFT",
+      amount: d.amount ? -nanoToTon(d.amount.value ?? d.amount) : null,
+      counterpartyLabel: "Продавец",
+      counterparty: d.seller?.address,
+      marketplace: d.marketplace || null,
+      nftName: d.nft?.metadata?.name || null,
+    };
+  }
+  if(ev.is_scam){
+    return { kind:"scam", label:"Подозрительное событие", note:"Возможный скам или риск" };
+  }
+  return {
+    kind: "out",
+    label: action.simple_preview?.description || type || "Событие",
+  };
+}
+
+function iconFor(kind){
+  if(kind === "scam") return {cls:"scam", glyph:"⚠"};
+  if(kind === "in") return {cls:"in", glyph:"↓"};
+  return {cls:"out", glyph:"↑"};
+}
+
+function renderTxRow(ev, index){
+  const d = extractDetail(ev);
+  const icon = iconFor(d.kind);
+  const amountLine = (d.amount !== null && d.amount !== undefined)
+    ? `<div class="tx-amount ${d.amount < 0 ? 'neg' : 'pos'}">${d.amount > 0 ? '+' : ''}${d.amount.toFixed(3)} TON</div>`
+    : "";
+
+  const kv = [];
+  if(d.counterparty) kv.push(`<span>${d.counterpartyLabel}: <b>${shortAddr(d.counterparty)}</b></span>`);
+  if(d.marketplace) kv.push(`<span>Маркетплейс: <b>${escapeHtml(d.marketplace)}</b></span>`);
+  if(d.nftName) kv.push(`<span>NFT: <b>${escapeHtml(d.nftName)}</b></span>`);
+  if(d.comment) kv.push(`<span>Комментарий: <b>${escapeHtml(d.comment)}</b></span>`);
+  if(d.note) kv.push(`<span class="tag-scam">${escapeHtml(d.note)}</span>`);
+
+  return `
+    <div class="tx-row">
+      <div class="tx-num">${index + 1}</div>
+      <div class="tx-icon ${icon.cls}">${icon.glyph}</div>
+      <div class="tx-body">
+        <div class="tx-top">
+          <div class="tx-desc">${escapeHtml(d.label)}</div>
+          ${amountLine}
+        </div>
+        <div class="tx-meta">${fmtDate(ev.timestamp)}</div>
+        ${kv.length ? `<div class="tx-kv">${kv.join("")}</div>` : ""}
+        <div class="tx-hash">ID: <span class="hash-link">${shortHash(ev.event_id)}</span></div>
+      </div>
+    </div>`;
+}
+
+function renderMain(){
+  const acc = state.account;
+  const balance = fmtTon(acc.balance);
+  const active = acc.status === "active";
+
+  const totalPages = Math.max(1, Math.ceil(state.events.length / PAGE_SIZE));
+  const page = Math.min(state.page || 1, totalPages);
+  const start = (page - 1) * PAGE_SIZE;
+  const shown = state.events.slice(start, start + PAGE_SIZE);
+
+  root.innerHTML = `
+    <div class="hero">
+      <div class="hero-row">
+        <div class="addr">
+          <span>${shortAddr(state.address)}</span>
+          <button id="copyBtn">copy</button>
+        </div>
+        <span class="pill ${active ? '' : 'inactive'}">${active ? '● active' : (acc.status || 'unknown')}</span>
+      </div>
+
+      <div class="balance-label">Баланс</div>
+      <div class="balance">${balance}<span class="unit">TON</span></div>
+
+      <div class="sub-meta">
+        ${acc.last_activity ? `<span>активность: <b>${fmtDate(acc.last_activity)}</b></span>` : ''}
+        ${acc.interfaces?.length ? `<span>тип: <b>${escapeHtml(acc.interfaces.join(', '))}</b></span>` : ''}
+      </div>
+    </div>
+
+    <div class="tear"></div>
+
+    <div class="report">
+      <div class="report-head">
+        <h2>Полный отчёт</h2>
+        <span class="count-badge">${state.events.length}</span>
+      </div>
+      ${shown.length ? shown.map((ev,i) => renderTxRow(ev, start + i)).join("") : renderEmptyTx()}
+      ${state.events.length ? `
+        <div class="report-more pager">
+          <button class="more-btn" id="prevBtn" ${page <= 1 ? 'disabled' : ''}>← Назад</button>
+          <span class="page-label">Страница ${page} из ${totalPages}</span>
+          <button class="more-btn" id="nextBtn" ${page >= totalPages ? 'disabled' : ''}>Ещё →</button>
+        </div>` : ''}
+    </div>
+  `;
+
+  document.getElementById("copyBtn")?.addEventListener("click", () => {
+    navigator.clipboard.writeText(state.address);
+  });
+  document.getElementById("prevBtn")?.addEventListener("click", () => {
+    state.page = Math.max(1, page - 1);
+    renderMain();
+  });
+  document.getElementById("nextBtn")?.addEventListener("click", () => {
+    state.page = Math.min(totalPages, page + 1);
+    renderMain();
+  });
+}
+
+async function loadWallet(rawInput){
+  state.loading = true;
+  state.error = null;
+  renderLoading();
+  try{
+    const address = await resolveAddress(rawInput);
+    const [account, events] = await Promise.all([
+      fetchJson("/accounts/" + address),
+      fetchJson("/accounts/" + address + "/events", {limit: 50}),
+    ]);
+    state.address = address;
+    state.account = account;
+    // помечаем каждое событие адресом кошелька — нужно, чтобы понять
+    // "входящий" перевод это или "исходящий"
+    state.events = (events.events || []).map(ev => ({...ev, account: {address}}));
+    state.page = 1;
+    renderMain();
+  } catch(err){
+    state.error = err;
+    renderError(err);
+  } finally {
+    state.loading = false;
+  }
+}
+
+lookupBtn.addEventListener("click", () => {
+  const v = addrInput.value.trim();
+  if(v) loadWallet(v);
+});
+addrInput.addEventListener("keydown", (e) => {
+  if(e.key === "Enter") lookupBtn.click();
+});
+
+// Автозагрузка по ?addr=EQ... в URL
+const params = new URLSearchParams(location.search);
+const preset = params.get("addr");
+if(preset){
+  addrInput.value = preset;
+  loadWallet(preset);
+} else {
+  root.innerHTML = `<div class="hero state">
+    <div class="state-title">Вставь адрес кошелька</div>
+    Введи TON-адрес (EQ.../UQ...) или .ton домен выше — покажу баланс и полный отчёт по транзакциям.
+  </div>`;
+}
+</script>
+</body>
+</html>
